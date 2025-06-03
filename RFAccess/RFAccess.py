@@ -12,6 +12,11 @@ elif sys.platform.startswith('darwin'):
 else:
   raise OSError("Unsupported operating system")
 
+_callback_refs = []
+def protect_cb_gc(cb):
+  _callback_refs.append(cb)
+  return cb
+
 lib_path = os.path.join(os.path.dirname(__file__), "bin", lib_filename)
 RFAccess = ctypes.CDLL(lib_path)
 
@@ -133,21 +138,21 @@ class LLRPClient:
       raise Exception(f"Error initializing client: {error}")
 
   def set_reader_capabilities_callback(self, callback):
-    self.reader_capabilities_callback = ReaderCapabilitiesCallback(callback)
+    self.reader_capabilities_callback = protect_cb_gc(ReaderCapabilitiesCallback(callback))
     result = RFAccess.client_set_reader_capabilities_callback(self._handle, self.reader_capabilities_callback)
     if result != 0:
       error = get_last_error()
       raise Exception(f"Error setting reader capabilities callback: {error}")
 
   def set_reader_config_callback(self, callback):
-    self.reader_config_callback = ReaderConfigCallback(callback)
+    self.reader_config_callback = protect_cb_gc(ReaderConfigCallback(callback))
     result = RFAccess.client_set_reader_config_callback(self._handle, self.reader_config_callback)
     if result != 0:
       error = get_last_error()
       raise Exception(f"Error setting reader config callback: {error}")
 
   def set_ro_access_report_callback(self, callback):
-    self.ro_access_report_callback = ROAccessReportCallback(callback)
+    self.ro_access_report_callback = protect_cb_gc(ROAccessReportCallback(callback))
     result = RFAccess.client_set_ro_access_report_callback(self._handle, self.ro_access_report_callback)
     if result != 0:
       error = get_last_error()
